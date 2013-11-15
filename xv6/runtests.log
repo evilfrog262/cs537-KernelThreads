@@ -397,15 +397,15 @@ ld  -m    elf_i386 -nostdlib --omagic \
 dd if=/dev/zero of=xv6.img count=10000
 10000+0 records in
 10000+0 records out
-5120000 bytes (5.1 MB) copied, 0.0220344 s, 232 MB/s
+5120000 bytes (5.1 MB) copied, 0.0219917 s, 233 MB/s
 dd if=kernel/bootblock of=xv6.img conv=notrunc
 1+0 records in
 1+0 records out
-512 bytes (512 B) copied, 1.7898e-05 s, 28.6 MB/s
+512 bytes (512 B) copied, 2.7404e-05 s, 18.7 MB/s
 dd if=kernel/kernel of=xv6.img seek=1 conv=notrunc
 254+1 records in
 254+1 records out
-130286 bytes (130 kB) copied, 0.000425441 s, 306 MB/s
+130286 bytes (130 kB) copied, 0.000405674 s, 321 MB/s
 gcc -c  -iquote include -Wall -Werror -ggdb  -o tools/mkfs.o tools/mkfs.c
 gcc  tools/mkfs.o -o tools/mkfs
 mkdir -p fs
@@ -468,24 +468,24 @@ ld  -m    elf_i386 -nostdlib --omagic --entry=main --section-start=.text=0x0 --o
 cp user/bin/test fs/test
 ./tools/mkfs fs.img fs
 used 29 (bit 1 ninode 26) free 29 total 1024
-wc
-stressfs
-cat
-rm
-test
-README
-ln
-ls
-zombie
-grep
-kill
-usertests
-mkdir
 sh
+test
+wc
 tester
-init
-echo
+README
+mkdir
+ls
 forktest
+grep
+rm
+kill
+zombie
+stressfs
+init
+usertests
+ln
+cat
+echo
 balloc: first 476 blocks have been allocated
 balloc: write bitmap block at sector 28
 rm user/bin/test user/bin/stressfs user/bin/tester user/bin/grep user/bin/kill user/bin/cat user/bin/mkdir user/bin/init user/bin/rm user/bin/echo user/bin/ls user/bin/ln user/bin/usertests user/bin/sh user/bin/wc user/bin/zombie
@@ -511,24 +511,24 @@ ld  -m    elf_i386 -nostdlib --omagic --entry=main --section-start=.text=0x0 --o
 cp user/bin/tester fs/tester
 ./tools/mkfs fs.img fs
 used 29 (bit 1 ninode 26) free 29 total 1024
-wc
-stressfs
-cat
-rm
-test
-README
-ln
-ls
-zombie
-grep
-kill
-usertests
-mkdir
 sh
+test
+wc
 tester
-init
-echo
+README
+mkdir
+ls
 forktest
+grep
+rm
+kill
+zombie
+stressfs
+init
+usertests
+ln
+cat
+echo
 balloc: first 479 blocks have been allocated
 balloc: write bitmap block at sector 28
 rm user/bin/tester
@@ -546,14 +546,13 @@ esp in exec: 12264
 $ tester
 tester
 esp in exec: 8164
-ustkptr before: 32768
+ustkptr before: 36864
 ustack[0]: -1
-ustkptr after: 32768
+ustkptr after: 36856
 first arg: 0
-np->tf->esp: 32768
-zombie!
+np->tf->esp: 36856
 cpu1: panic: kfree
- 1029ee 107bba 1043e3 105d6a 104f27 10614d 105f41 0 0 0
+
 
 test clone3 FAILED
  (clone copies file descriptors, but doesn't share)

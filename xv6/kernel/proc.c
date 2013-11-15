@@ -178,8 +178,8 @@ clone(void(*fcn)(void*), void *arg, void *stack)
   // do we clear %eax? probably not
 
   //cprintf("stack: %d\n", stack);
-  //ustkptr = (int)stack + PGSIZE;
-  ustkptr = (uint)stack;
+  ustkptr = (int)stack + PGSIZE;
+  //ustkptr = (uint)stack;
   cprintf("ustkptr before: %d\n", ustkptr);
   uint ustack[2];
   ustack[1] = (uint)arg;
@@ -188,8 +188,9 @@ clone(void(*fcn)(void*), void *arg, void *stack)
   //cprintf("ustack[0]: %d\n", ustack[0]);
   ustack[0] = 0xffffffff; // fake return pc
   cprintf("ustack[0]: %d\n", ustack[0]);
-  //copyout(np->pgdir, ustkptr - 2 * sizeof(uint), ustack, 2*sizeof(uint));
+  ustkptr -= 2 * sizeof(uint);
   copyout(np->pgdir, ustkptr, ustack, 2*sizeof(uint));
+  //copyout(np->pgdir, ustkptr, ustack, 2*sizeof(uint));
   //ustkptr -= 2 * sizeof(uint);  
   //ustkptr += 2 * sizeof(uint);
 
