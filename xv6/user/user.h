@@ -2,6 +2,9 @@
 #define _USER_H_
 
 struct stat;
+typedef struct __lock_t {
+  volatile unsigned int *value;
+} lock_t;
 
 // system calls
 int fork(void);
@@ -25,6 +28,8 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int clone(void*, void*);
+int join(void);
 
 // user library functions (ulib.c)
 int stat(char*, struct stat*);
@@ -39,6 +44,8 @@ void* memset(void*, int, uint);
 void* malloc(uint);
 void free(void*);
 int atoi(const char*);
-
+void lock_init(lock_t*);
+void lock_acquire(lock_t*);
+void lock_release(lock_t*);
 #endif // _USER_H_
 

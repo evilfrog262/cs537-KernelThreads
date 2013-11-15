@@ -159,6 +159,56 @@ fork(void)
   return pid;
 }
 
+int
+clone(void *arg, void *stack)
+{
+  struct proc *np; // this is a thread
+  //void *sp;
+  int pid, ustkptr;
+
+  if((np = allocproc()) == 0) {
+    return -1;
+  }
+  np->pgdir = proc->pgdir; // same page directory as parent
+  np->sz = proc->sz;
+  np->parent = proc;
+  *np->tf = *proc->tf;
+
+  // do we clear %eax? probably not
+
+  //cprintf("stack: %d\n", stack);
+  ustkptr = (int)stack + PGSIZE;
+  cprintf("ustkptr before: %d\n", ustkptr);
+  uint ustack[2];
+  ustack[1] = (uint)arg;
+  //cprintf("arg before: %d\n", (uint)arg);
+  //cprintf("ustack[0]: %d\n", ustack[0]);
+  ustack[0] = 0xffffffff; // fake return pc
+  //cprintf("ustack[0]: %d\n", ustack[0]);
+  copyout(np->pgdir, ustkptr - 2 * sizeof(uint), ustack, 2*sizeof(uint));
+  ustkptr -= 2 * sizeof(uint);  
+
+  // test code
+  cprintf("ustkptr after: %d\n", ustkptr);
+  uint *stackBottom = stack + PGSIZE;
+  stackBottom -= 1;
+  cprintf("first arg: %x\n", *stackBottom);
+  //cprintf("stackBottom: %p\n", stackBottom);
+
+  np->tf->esp = ustkptr;
+  cprintf("np->tf->esp: %d\n", np->tf->esp);
+  //cprintf("arg: %d\n", (int)&arg);
+  np->pid = proc->pid;
+  pid = np->pid;
+  return pid;
+}
+
+int
+join(void **stack)
+{
+	return 0;
+}
+
 // Exit the current process.  Does not return.
 // An exited process remains in the zombie state
 // until its parent calls wait() to find out it exited.
