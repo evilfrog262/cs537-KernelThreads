@@ -28,7 +28,7 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
-int clone(void*, void*);
+int clone(void(*)(void*), void*, void*);
 int join(void);
 
 // user library functions (ulib.c)

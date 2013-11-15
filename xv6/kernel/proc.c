@@ -160,11 +160,12 @@ fork(void)
 }
 
 int
-clone(void *arg, void *stack)
+clone(void(*fcn)(void*), void *arg, void *stack)
 {
   struct proc *np; // this is a thread
   //void *sp;
-  int pid, ustkptr;
+  int pid;
+  uint ustkptr;
 
   if((np = allocproc()) == 0) {
     return -1;
@@ -177,16 +178,20 @@ clone(void *arg, void *stack)
   // do we clear %eax? probably not
 
   //cprintf("stack: %d\n", stack);
-  ustkptr = (int)stack + PGSIZE;
+  //ustkptr = (int)stack + PGSIZE;
+  ustkptr = (uint)stack;
   cprintf("ustkptr before: %d\n", ustkptr);
   uint ustack[2];
   ustack[1] = (uint)arg;
+  //ustack[1] = 0;
   //cprintf("arg before: %d\n", (uint)arg);
   //cprintf("ustack[0]: %d\n", ustack[0]);
   ustack[0] = 0xffffffff; // fake return pc
-  //cprintf("ustack[0]: %d\n", ustack[0]);
-  copyout(np->pgdir, ustkptr - 2 * sizeof(uint), ustack, 2*sizeof(uint));
-  ustkptr -= 2 * sizeof(uint);  
+  cprintf("ustack[0]: %d\n", ustack[0]);
+  //copyout(np->pgdir, ustkptr - 2 * sizeof(uint), ustack, 2*sizeof(uint));
+  copyout(np->pgdir, ustkptr, ustack, 2*sizeof(uint));
+  //ustkptr -= 2 * sizeof(uint);  
+  //ustkptr += 2 * sizeof(uint);
 
   // test code
   cprintf("ustkptr after: %d\n", ustkptr);
@@ -198,15 +203,55 @@ clone(void *arg, void *stack)
   np->tf->esp = ustkptr;
   cprintf("np->tf->esp: %d\n", np->tf->esp);
   //cprintf("arg: %d\n", (int)&arg);
+  np->tf->eip = (uint)fcn;
   np->pid = proc->pid;
+  np->state = RUNNABLE;
   pid = np->pid;
+  safestrcpy(np->name, proc->name, sizeof(proc->name));
   return pid;
 }
 
 int
 join(void **stack)
 {
-	return 0;
+  struct proc *p;
+  int havekids, pid;
+
+  acquire(&ptable.lock);
+  for(;;){
+    // Scan through table looking for zombie children.
+    havekids = 0;
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->pgdir != proc->pgdir)
+        continue;
+      havekids = 1;
+      if(p->state == ZOMBIE){
+        // Found one.
+        pid = p->pid;
+        kfree(p->kstack);
+        p->kstack = 0;
+        freevm(p->pgdir);
+        p->state = UNUSED;
+        p->pid = 0;
+        p->parent = 0;
+        p->name[0] = 0;
+        p->killed = 0;
+	int** stack2 = (int**) stack;
+        **stack2 = p->tf->esp;
+        release(&ptable.lock);
+        return pid;
+      }
+    }
+
+    // No point waiting if we don't have any children.
+    if(!havekids || proc->killed){
+      release(&ptable.lock);
+      return -1;
+    }
+
+    // Wait for children to exit.  (See wakeup1 call in proc_exit.)
+    sleep(proc, &ptable.lock);  //DOC: wait-sleep
+  }
 }
 
 // Exit the current process.  Does not return.
