@@ -29,7 +29,7 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int clone(void(*)(void*), void*, void*);
-int join(void);
+int join(void**);
 
 // user library functions (ulib.c)
 int stat(char*, struct stat*);
@@ -47,5 +47,7 @@ int atoi(const char*);
 void lock_init(lock_t*);
 void lock_acquire(lock_t*);
 void lock_release(lock_t*);
+int thread_create(void (*start_routine)(void*), void *arg);
+int thread_join();
 #endif // _USER_H_
 

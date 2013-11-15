@@ -3,8 +3,10 @@
 #include "fcntl.h"
 #include "user.h"
 #include "x86.h"
+#include "fs.h"
 
-//thread_create(void (*start_routine)(void*), void *arg);
+
+
 //thread_join();
 
 void lock_acquire(lock_t *lock) {
@@ -25,6 +27,15 @@ typedef struct __cond_t {
   int state;
   lock_t cvlock;
 } cond_t;
+
+/*
+int thread_create(void (*start_routine)(void*), void *arg){
+   void* stack = malloc(10);
+   stack = NULL;
+   return 0;
+}
+*/
+
 
 char*
 strcpy(char *s, char *t)
