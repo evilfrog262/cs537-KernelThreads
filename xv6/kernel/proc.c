@@ -169,14 +169,17 @@ clone(void(*fcn)(void*), void *arg, void *stack)
 
   // check that stack is page aligned
   if ((uint)stack % PGSIZE != 0) {
+    //cprintf("stack not page aligned\n");
     return -1;
   }
   // check that stack is within process heap
   if ((uint)stack + 4096 > proc->sz) {
+    //cprintf("stack not within heap\n");
     return -1;
   }
   
   if((np = allocproc()) == 0) {
+    //cprintf("allocproc failed\n");
     return -1;
   }
   np->pgdir = proc->pgdir; // same page directory as parent
@@ -194,14 +197,14 @@ clone(void(*fcn)(void*), void *arg, void *stack)
   //cprintf("stack: %d\n", stack);
   ustkptr = (int)stack + PGSIZE;
   //ustkptr = (uint)stack;
-  cprintf("ustkptr before: %d\n", ustkptr);
+  //cprintf("ustkptr before: %d\n", ustkptr);
   uint ustack[2];
   ustack[1] = (uint)arg;
   //ustack[1] = 0;
   //cprintf("arg before: %d\n", (uint)arg);
   //cprintf("ustack[0]: %d\n", ustack[0]);
   ustack[0] = 0xffffffff; // fake return pc
-  cprintf("ustack[0]: %d\n", ustack[0]);
+  //cprintf("ustack[0]: %d\n", ustack[0]);
   ustkptr -= 2 * sizeof(uint);
   copyout(np->pgdir, ustkptr, ustack, 2*sizeof(uint));
   //copyout(np->pgdir, ustkptr, ustack, 2*sizeof(uint));
@@ -209,14 +212,14 @@ clone(void(*fcn)(void*), void *arg, void *stack)
   //ustkptr += 2 * sizeof(uint);
 
   // test code
-  cprintf("ustkptr after: %d\n", ustkptr);
+  //cprintf("ustkptr after: %d\n", ustkptr);
   uint *stackBottom = stack + PGSIZE;
   stackBottom -= 1;
-  cprintf("first arg: %x\n", *stackBottom);
+  //cprintf("first arg: %x\n", *stackBottom);
   //cprintf("stackBottom: %p\n", stackBottom);
 
   np->tf->esp = ustkptr;
-  cprintf("np->tf->esp: %d\n", np->tf->esp);
+  //cprintf("np->tf->esp: %d\n", np->tf->esp);
   //cprintf("arg: %d\n", (int)&arg);
   np->tf->eip = (uint)fcn;
   np->pid = proc->pid;
@@ -253,7 +256,7 @@ join(void **stack)
         p->killed = 0;
 	//uint** stack2 = (uint**) stack;
         *stack = p->threadptr;
-	cprintf("returning from join\n");
+	//cprintf("returning from join\n");
         release(&ptable.lock);
         return pid;
       }
