@@ -12,10 +12,7 @@ typedef struct __node_t {
 } node_t;
 
 typedef struct __cond_t {
-  int numprocs;
-  lock_t cvlock;
-  node_t* head;
-  node_t* tail;
+  lock_t* cvlock;
 } cond_t;
 
 // system calls
@@ -42,6 +39,8 @@ int sleep(int);
 int uptime(void);
 int clone(void(*)(void*), void*, void*);
 int join(void**);
+int condsleep(cond_t *, lock_t *);
+int condwake(cond_t *);
 
 // user library functions (ulib.c)
 int stat(char*, struct stat*);

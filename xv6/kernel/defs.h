@@ -10,6 +10,19 @@ struct proc;
 struct spinlock;
 struct stat;
 
+typedef struct __lock_t {
+  volatile unsigned int *value;
+} lock_t;
+
+typedef struct __node_t {
+  struct __node_t* next;
+  int pid;
+} node_t;
+
+typedef struct __cond_t {
+  lock_t* cvlock;
+} cond_t;
+
 // bio.c
 void            binit(void);
 struct buf*     bread(uint, uint);
@@ -111,7 +124,8 @@ void            wakeup(void*);
 void            yield(void);
 int		clone(void(*)(void*), void*, void*);
 int		join(void**);
-
+void		condsleep(void *, lock_t *);
+void		condwake(void*);
 // swtch.S
 void            swtch(struct context**, struct context*);
 

@@ -31,17 +31,14 @@ void lock_init(lock_t *lock) {
 
 
 void cv_wait(cond_t * cv, lock_t * lock) {
-	node_t* newNode = malloc(sizeof(node_t));	
-	if (cv->numprocs == 0) {
-	    cv->head = newNode;
-		cv->tail = newNode;
-		newNode->pid = getpid();
-	}
-	//sleep((uint)&cv, &lock);
+	condsleep(cv,lock);
+        return;
 }
 
 void cv_signal(cond_t * cv) {
 	//wakeup(&cv);
+	condwake(cv);
+        return;
 ;
 }
 

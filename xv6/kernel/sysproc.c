@@ -33,6 +33,34 @@ sys_join(void)
 }
 
 int
+sys_condsleep(void){
+   void *cv, *tmp;
+
+ if(argptr(0,(void*)&cv,sizeof(void *))<0){
+   return -1;
+  } 
+  if(argptr(1,(void*)&tmp,sizeof(void *))<0){
+     return -1;
+  }
+  lock_t *lock = (lock_t *) tmp;
+  ((cond_t *)cv)->cvlock = lock;
+  condsleep(cv,lock);
+  return 0;
+}
+
+int
+sys_condwake(void){
+   void *cv;
+
+  if(argptr(0,(void*)&cv,sizeof(void *))<0){
+    return -1;
+  }
+  condwake(cv);
+ return 0;
+}
+
+
+int
 sys_fork(void)
 {
   return fork();
