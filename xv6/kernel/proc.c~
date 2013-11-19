@@ -107,8 +107,22 @@ int
 growproc(int n)
 {
   uint sz;
-  
+  struct proc *p;
+  cprintf("in grow proc\n");
   sz = proc->sz;
+
+   update sz for all child threads
+  acquire(&ptable.lock);
+  cprintf("proc addr: %d\n", &ptable.proc[NPROC]);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+	 if(p->isclone == 1 && p->parent == proc) {
+        cprintf("p: %p\n", p);
+        p->sz = sz;
+     }
+  }
+  cprintf("released lock\n");
+  release(&ptable.lock);
+  
   if(n > 0){
     if((sz = allocuvm(proc->pgdir, sz, sz + n)) == 0)
       return -1;
@@ -164,19 +178,31 @@ clone(void(*fcn)(void*), void *arg, void *stack)
 {
   struct proc *np; // this is a thread
   //void *sp;
-  int pid;
+  int pid, i;
   uint ustkptr;
 
+  // check that stack is page aligned
+  if ((uint)stack % PGSIZE != 0) {
+    //cprintf("stack not page aligned\n");
+    return -1;
+  }
+  // check that stack is within process heap
+  if ((uint)stack + 4096 > proc->sz) {
+    //cprintf("stack not within heap\n");
+    return -1;
+  }
+  
   if((np = allocproc()) == 0) {
+    //cprintf("allocproc failed\n");
     return -1;
   }
   np->pgdir = proc->pgdir; // same page directory as parent
   np->sz = proc->sz;
   np->parent = proc;
   *np->tf = *proc->tf;
+  np->threadptr = stack;
 
   // do we clear %eax? probably not
-  int i;
   for(i = 0; i < NOFILE; i++)
     if(proc->ofile[i])
       np->ofile[i] = filedup(proc->ofile[i]);
@@ -185,14 +211,14 @@ clone(void(*fcn)(void*), void *arg, void *stack)
   //cprintf("stack: %d\n", stack);
   ustkptr = (int)stack + PGSIZE;
   //ustkptr = (uint)stack;
-  cprintf("ustkptr before: %d\n", ustkptr);
+  //cprintf("ustkptr before: %d\n", ustkptr);
   uint ustack[2];
   ustack[1] = (uint)arg;
   //ustack[1] = 0;
   //cprintf("arg before: %d\n", (uint)arg);
   //cprintf("ustack[0]: %d\n", ustack[0]);
   ustack[0] = 0xffffffff; // fake return pc
-  cprintf("ustack[0]: %d\n", ustack[0]);
+  //cprintf("ustack[0]: %d\n", ustack[0]);
   ustkptr -= 2 * sizeof(uint);
   copyout(np->pgdir, ustkptr, ustack, 2*sizeof(uint));
   //copyout(np->pgdir, ustkptr, ustack, 2*sizeof(uint));
@@ -200,19 +226,20 @@ clone(void(*fcn)(void*), void *arg, void *stack)
   //ustkptr += 2 * sizeof(uint);
 
   // test code
-  cprintf("ustkptr after: %d\n", ustkptr);
+  //cprintf("ustkptr after: %d\n", ustkptr);
   uint *stackBottom = stack + PGSIZE;
   stackBottom -= 1;
-  cprintf("first arg: %x\n", *stackBottom);
+  //cprintf("first arg: %x\n", *stackBottom);
   //cprintf("stackBottom: %p\n", stackBottom);
 
   np->tf->esp = ustkptr;
-  cprintf("np->tf->esp: %d\n", np->tf->esp);
+  //cprintf("np->tf->esp: %d\n", np->tf->esp);
   //cprintf("arg: %d\n", (int)&arg);
   np->tf->eip = (uint)fcn;
   np->pid = proc->pid;
   np->state = RUNNABLE;
   pid = np->pid;
+  np->isclone = 1;
   safestrcpy(np->name, proc->name, sizeof(proc->name));
   return pid;
 }
@@ -228,7 +255,7 @@ join(void **stack)
     // Scan through table looking for zombie children.
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->pgdir != proc->pgdir)
+      if(p->isclone != 1 || p->parent != proc)
         continue;
       havekids = 1;
       if(p->state == ZOMBIE){
@@ -236,14 +263,14 @@ join(void **stack)
         pid = p->pid;
         kfree(p->kstack);
         p->kstack = 0;
-        freevm(p->pgdir);
         p->state = UNUSED;
         p->pid = 0;
         p->parent = 0;
         p->name[0] = 0;
         p->killed = 0;
-	int** stack2 = (int**) stack;
-        **stack2 = p->tf->esp;
+	//uint** stack2 = (uint**) stack;
+        *stack = p->threadptr;
+	//cprintf("returning from join\n");
         release(&ptable.lock);
         return pid;
       }
@@ -316,7 +343,7 @@ wait(void)
     // Scan through table looking for zombie children.
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->parent != proc)
+      if(p->isclone == 1 || p->parent != proc)
         continue;
       havekids = 1;
       if(p->state == ZOMBIE){
@@ -464,6 +491,28 @@ sleep(void *chan, struct spinlock *lk)
   }
 }
 
+void
+condsleep(void *chan, lock_t *lock)
+{
+  if(proc == 0){
+    panic("sleep");
+  }
+  acquire(&ptable.lock);  //DOC: sleeplock1
+
+     // Go to sleep.
+  xchg(lock->value, 0);
+  proc->chan = chan;
+  proc->state = SLEEPING;
+  sched();
+   
+  proc->chan = 0;
+  release(&ptable.lock);
+  while(xchg(lock->value, 1) != 0){
+    ;
+  }
+}
+
+
 // Wake up all processes sleeping on chan.
 // The ptable lock must be held.
 static void
@@ -474,6 +523,18 @@ wakeup1(void *chan)
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == SLEEPING && p->chan == chan)
       p->state = RUNNABLE;
+}
+
+void
+condwake(void *chan)
+ {
+ struct proc *p;
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->state == SLEEPING && p->chan == chan) {
+      p->state = RUNNABLE;
+      break;
+    }
+ }
 }
 
 // Wake up all processes sleeping on chan.
