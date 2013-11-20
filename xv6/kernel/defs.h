@@ -11,7 +11,7 @@ struct spinlock;
 struct stat;
 
 typedef struct __lock_t {
-  volatile unsigned int *value;
+  volatile unsigned int value;
 } lock_t;
 
 typedef struct __node_t {

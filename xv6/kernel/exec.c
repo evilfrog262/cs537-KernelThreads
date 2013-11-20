@@ -86,7 +86,7 @@ exec(char *path, char **argv)
   proc->sz = sz;
   proc->tf->eip = elf.entry;  // main
   proc->tf->esp = sp;
-  cprintf("esp in exec: %d\n", sp);
+  //cprintf("esp in exec: %d\n", sp);
   switchuvm(proc);
   freevm(oldpgdir);
 

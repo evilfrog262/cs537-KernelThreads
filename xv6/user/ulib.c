@@ -16,17 +16,17 @@ int thread_join() {
 }
 
 void lock_acquire(lock_t *lock) {
-  while (xchg(lock->value, 1) == 1) {
+  while (xchg(&(lock->value), 1) == 1) {
     ;
   }
 }
 
 void lock_release(lock_t *lock) {
-  xchg(lock->value, 0);
+  xchg(&(lock->value), 0);
 }
 
 void lock_init(lock_t *lock) {
-  xchg(lock->value, 0);
+  xchg(&(lock->value), 0);
 }
 
 

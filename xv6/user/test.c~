@@ -36,12 +36,12 @@ main(int argc, char *argv[])
    lock_init(&lock);
    lock_init(&lock2);
 
-   printf(1, "initialized locks\n");
+   printf(1, "initialized locks: %d\n%d\n", &lock, &lock2);
 
    lock_acquire(&lock);
 
    printf(1, "acquired lock\n");
-   //lock_acquire(&lock2);
+   lock_acquire(&lock2);
 
    printf(1, "acquired lock2\n");
 
@@ -66,12 +66,12 @@ main(int argc, char *argv[])
    size = (unsigned int)sbrk(0);
    lock_release(&lock);
 
-   //while (global < num_threads) {
-     // lock_release(&lock2);
-      //sleep(100);
-      //lock_acquire(&lock2);
-   //}
-   //lock_release(&lock2);
+   while (global < num_threads) {
+      lock_release(&lock2);
+      sleep(100);
+      lock_acquire(&lock2);
+   }
+   lock_release(&lock2);
    printf(1, "passed 3rd loop\n");
 
    for (i = 0; i < num_threads; i++) {
@@ -90,10 +90,10 @@ worker(void *arg_ptr) {
    global++;
    lock_release(&lock);
 
-   //lock_acquire(&lock2);
-   //assert((unsigned int)sbrk(0) == size);
-   //global++;
-   //lock_release(&lock2);
+   lock_acquire(&lock2);
+   assert((unsigned int)sbrk(0) == size);
+   global++;
+   lock_release(&lock2);
 
    exit();
 }

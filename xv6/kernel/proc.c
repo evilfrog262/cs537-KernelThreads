@@ -108,19 +108,19 @@ growproc(int n)
 {
   uint sz;
   struct proc *p;
-  cprintf("in grow proc\n");
+  //cprintf("in grow proc\n");
   sz = proc->sz;
 
   // update sz for all child threads
   acquire(&ptable.lock);
-  cprintf("proc addr: %d\n", &ptable.proc[NPROC]);
+  //cprintf("proc addr: %d\n", &ptable.proc[NPROC]);
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 	 if(p->isclone == 1 && p->parent == proc) {
-        cprintf("p: %p\n", p);
+        //cprintf("p: %p\n", p);
         p->sz = sz;
      }
   }
-  cprintf("released lock\n");
+  //cprintf("released lock\n");
   release(&ptable.lock);
   
   if(n > 0){
@@ -500,14 +500,14 @@ condsleep(void *chan, lock_t *lock)
   acquire(&ptable.lock);  //DOC: sleeplock1
 
      // Go to sleep.
-  xchg(lock->value, 0);
+  xchg(&(lock->value), 0);
   proc->chan = chan;
   proc->state = SLEEPING;
   sched();
    
   proc->chan = 0;
   release(&ptable.lock);
-  while(xchg(lock->value, 1) != 0){
+  while(xchg(&(lock->value), 1) != 0){
     ;
   }
 }
